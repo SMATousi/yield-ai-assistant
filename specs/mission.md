@@ -28,8 +28,8 @@ MU Extension field agronomists and crop advisors serving producers across Missou
 
 ## Success Criteria
 
-- A user can describe their farm location in any natural-language form and receive a correctly matched grid point within 2 seconds.
-- The recommendation plot and DOY response curve render interactively within 5 seconds of the query.
+- A user can describe their farm location in any natural-language form and receive a correctly matched grid point.
+- The recommendation plot and DOY response curve render interactively in response to a query.
 - The agent's plain-language interpretation references the composite score methodology and at least one relevant extension principle from the RAG corpus.
 - The system handles all Missouri grid points in the aggregate dataset without hardcoding.
 

@@ -25,21 +25,20 @@
 
 | Component | Choice | Rationale |
 |---|---|---|
-| **Client layer** | **LiteLLM** | Unified OpenAI-style interface across 100+ providers (Claude, Ollama, OpenAI, Mistral, etc.). Switching providers is a one-line `MODEL=` config change with no other code changes. |
-| **Default model** | `claude-sonnet-4-6` | Strong tool-use support, fast, cost-effective. Referenced as `"anthropic/claude-sonnet-4-6"` in LiteLLM. |
-| **Ollama alternative** | e.g. `"ollama/qwen2.5:14b"` or `"ollama/llama3.1:8b"` | Runs fully locally, no API cost, data never leaves the machine. Requires a machine with sufficient RAM (8B ≈ 8 GB, 14B ≈ 16 GB). |
-| **Claude fallback** | `claude-opus-4-8` | For complex multi-hop agronomic reasoning if the default model produces shallow explanations. |
+| **Client layer** | **LiteLLM** | Unified OpenAI-style interface across 100+ providers (Ollama, Claude, OpenAI, Mistral, etc.). Switching providers is a one-line `MODEL=` config change with no other code changes. |
+| **Default model** | `ollama/qwen2.5:14b` | Strong tool-use support among open-source models, runs fully locally, no API cost, data never leaves the machine. Requires ~16 GB RAM. `llama3.1:8b` is a lighter alternative (~8 GB RAM). |
+| **Claude upgrade path** | `anthropic/claude-sonnet-4-6` | Drop-in replacement if open-source model quality proves insufficient for tool use or agronomic reasoning. No code changes required beyond setting `MODEL`. |
 
 ```python
 # config.py — the only line that changes when switching providers
-MODEL = os.getenv("YIELD_LLM_MODEL", "anthropic/claude-sonnet-4-6")
+MODEL = os.getenv("YIELD_LLM_MODEL", "ollama/qwen2.5:14b")
 
 # agent.py — provider-agnostic call
 import litellm
 response = litellm.completion(model=MODEL, messages=messages, tools=tools)
 ```
 
-**Tool use caveat for open-source models:** Claude has first-class tool use. Ollama models vary — Qwen2.5 and Llama 3.1/3.2 handle structured tool calls reasonably well; smaller or older models may hallucinate tool call syntax or ignore tools entirely. The agent's tool-use loop must include strict output validation and a graceful fallback for malformed tool responses when running against Ollama.
+**Tool use caveat for open-source models:** Qwen2.5 and Llama 3.1/3.2 handle structured tool calls reasonably well, but output validation is still necessary — smaller or older models may hallucinate tool call syntax or ignore tools entirely. The agent's tool-use loop must include strict output validation and a graceful fallback for malformed tool responses.
 
 Tool use (function calling) is the primary mechanism: the agent calls `generate_recommendation_plot`, `generate_doy_response_plot`, and `search_extension_knowledge` as structured tools, so figure generation and retrieval are deterministic — the LLM only provides reasoning, not raw data.
 
@@ -163,10 +162,10 @@ chromadb           # vector store
 pytest             # testing
 ```
 
-To run against Ollama instead of Claude, set the environment variable before starting the app:
+To switch to Claude if needed:
 
 ```bash
-YIELD_LLM_MODEL=ollama/qwen2.5:14b python src/app/app.py
+YIELD_LLM_MODEL=anthropic/claude-sonnet-4-6 python src/app/app.py
 ```
 
 All packages available on PyPI; no compiled extensions beyond numpy/scipy (already in the conda base).

@@ -23,3 +23,14 @@ rad.json
 TestResults.xml
 
 data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.env
+.venv/

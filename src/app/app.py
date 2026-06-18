@@ -114,7 +114,7 @@ def _handle_query(
         return state, state.chat_history, None, gr.update(), "Site: —", ""
 
     # Inject API key into environment before the LLM call
-    if api_key.strip():
+    if (api_key or "").strip():
         if provider == "Claude API":
             os.environ["ANTHROPIC_API_KEY"] = api_key.strip()
         elif provider == "OpenAI":

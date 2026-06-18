@@ -104,7 +104,7 @@ TOOLS: list[dict] = [
                         ),
                     },
                 },
-                "required": ["moisture_scenario"],
+                "required": [],
             },
         },
     },
@@ -173,7 +173,7 @@ def _lookup_nearest_site(location: str, ctx: ToolContext) -> ToolResult:
 
 
 def _generate_recommendation_plot(
-    moisture_scenario: str,
+    moisture_scenario: str = "all",
     location: str | None = None,
     site: str | None = None,
     planting_date: str = "Apr-15",

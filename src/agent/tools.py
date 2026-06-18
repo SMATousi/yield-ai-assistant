@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import inspect
 import json
 import math
 
@@ -219,4 +220,6 @@ def execute_tool(name: str, arguments: dict, ctx: ToolContext) -> ToolResult:
     fn = _DISPATCH.get(name)
     if fn is None:
         raise AgentError(f"Unknown tool: {name!r}")
-    return fn(**arguments, ctx=ctx)
+    valid = set(inspect.signature(fn).parameters) - {"ctx"}
+    filtered = {k: v for k, v in arguments.items() if k in valid}
+    return fn(**filtered, ctx=ctx)

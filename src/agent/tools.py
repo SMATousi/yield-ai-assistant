@@ -67,14 +67,24 @@ TOOLS: list[dict] = [
                 "Generate a two-panel soybean management recommendation figure for a specific "
                 "location, planting date, and moisture scenario. Panel A ranks treatments by "
                 "P(best) with confidence intervals. Panel B shows the risk-return trade-off "
-                "as a bubble chart. Returns a Plotly figure."
+                "as a bubble chart. Returns a Plotly figure. "
+                "Pass 'site' (from a prior lookup_nearest_site call) OR 'location' (will be geocoded)."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "site": {
+                        "type": "string",
+                        "description": (
+                            "Grid site key returned by lookup_nearest_site, e.g. '38.95_-92.33'. "
+                            "Preferred when already resolved — avoids a second geocoding call."
+                        ),
+                    },
                     "location": {
                         "type": "string",
-                        "description": "Free-text location in Missouri.",
+                        "description": (
+                            "Free-text location in Missouri. Required only when 'site' is not available."
+                        ),
                     },
                     "planting_date": {
                         "type": "string",
@@ -94,7 +104,7 @@ TOOLS: list[dict] = [
                         ),
                     },
                 },
-                "required": ["location", "moisture_scenario"],
+                "required": ["moisture_scenario"],
             },
         },
     },
@@ -106,17 +116,27 @@ TOOLS: list[dict] = [
                 "Generate a three-panel planting-date response figure for a location. "
                 "Shows how mean yield varies with planting date for the best treatments, "
                 "with one panel each for dry, average, and wet years. Star markers indicate "
-                "the winning treatment at each planting date."
+                "the winning treatment at each planting date. "
+                "Pass 'site' (from a prior lookup_nearest_site call) OR 'location' (will be geocoded)."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "site": {
+                        "type": "string",
+                        "description": (
+                            "Grid site key returned by lookup_nearest_site, e.g. '38.95_-92.33'. "
+                            "Preferred when already resolved."
+                        ),
+                    },
                     "location": {
                         "type": "string",
-                        "description": "Free-text location in Missouri.",
-                    }
+                        "description": (
+                            "Free-text location in Missouri. Required only when 'site' is not available."
+                        ),
+                    },
                 },
-                "required": ["location"],
+                "required": [],
             },
         },
     },
@@ -153,14 +173,18 @@ def _lookup_nearest_site(location: str, ctx: ToolContext) -> ToolResult:
 
 
 def _generate_recommendation_plot(
-    location: str,
     moisture_scenario: str,
+    location: str | None = None,
+    site: str | None = None,
     planting_date: str = "Apr-15",
     ctx: ToolContext = None,  # type: ignore[assignment]
 ) -> ToolResult:
     try:
-        lat, lon = _geocoder.geocode(location)
-        site = ctx.grid.nearest_site(lat, lon)
+        if site is None:
+            if not location:
+                return ToolResult(content="Error: either 'site' or 'location' is required.")
+            lat, lon = _geocoder.geocode(location)
+            site = ctx.grid.nearest_site(lat, lon)
         fig = plot_recommendation(
             ctx.dataset.df, site, planting_date, moisture_scenario
         )
@@ -186,10 +210,17 @@ def _generate_recommendation_plot(
         return ToolResult(content=f"Error generating recommendation plot: {exc}")
 
 
-def _generate_doy_response_plot(location: str, ctx: ToolContext = None) -> ToolResult:  # type: ignore[assignment]
+def _generate_doy_response_plot(
+    location: str | None = None,
+    site: str | None = None,
+    ctx: ToolContext = None,  # type: ignore[assignment]
+) -> ToolResult:
     try:
-        lat, lon = _geocoder.geocode(location)
-        site = ctx.grid.nearest_site(lat, lon)
+        if site is None:
+            if not location:
+                return ToolResult(content="Error: either 'site' or 'location' is required.")
+            lat, lon = _geocoder.geocode(location)
+            site = ctx.grid.nearest_site(lat, lon)
         fig = plot_doy_response(ctx.dataset.df, site)
         flat = ctx.dataset.df.reset_index()
         site_df = flat[flat["site"] == site]

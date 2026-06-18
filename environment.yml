@@ -1,0 +1,23 @@
+name: yield-ai
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - pandas>=2.0
+    - scipy>=1.11
+    - geopy>=2.4
+    - pytest>=8.0
+    - pytest-snapshot
+    - plotly>=5.20
+    - gradio>=4.0
+    - fastapi>=0.110
+    - uvicorn>=0.29
+    - pypdf>=4.0
+    - langchain-text-splitters>=0.2
+    - sentence-transformers>=3.0
+    - chromadb>=0.5
+    - litellm>=1.40
+    - numpy>=1.26

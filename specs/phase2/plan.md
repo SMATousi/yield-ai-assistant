@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build the LLM-powered orchestration layer that sits between user queries and the Phase 0/1 infrastructure. This phase produces three modules under `src/agent/`, a test file, a smoke script, and a new pytest marker. It does not touch the GUI (Phase 4), the RAG knowledge base (Phase 3), or any Phase 0/1 code — those modules are consumed read-only.
+Build the LLM-powered orchestration layer that sits between user queries and the Phase 0/1 infrastructure. This phase produces three modules under `src/agent/`, a test file, a smoke script, and a new pytest marker. It does not touch the GUI (Phase 3), the RAG knowledge base (Phase 4), or any Phase 0/1 code — those modules are consumed read-only.
 
 The agent uses LiteLLM's `tools=` parameter (OpenAI function-calling format) to let the model decide which plots to generate and for which parameters. Plot generation and geocoding remain deterministic Python — the LLM only provides reasoning and parameter extraction.
 

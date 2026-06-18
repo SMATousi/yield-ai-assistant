@@ -46,20 +46,7 @@ Each phase ends with a working, testable deliverable. Phases are sequential; eac
 
 ---
 
-## Phase 3 — RAG Knowledge Base
-**Goal:** Ingest MU Extension PDFs; enable the agent to ground agronomic explanations in retrieved passages.
-
-**Deliverables:**
-- `src/rag/ingest.py` — PDF chunking (recursive character splitter, ~500 tokens, 50-token overlap) and embedding via the Claude Embeddings API or `sentence-transformers`; stores vectors in ChromaDB on disk.
-- `src/rag/retriever.py` — `retrieve(query, k=4) → list[Chunk]` with source citation metadata (document name, page number).
-- Agent integration: retrieved passages injected into the system prompt when the user asks a "why" or "how" question; tool `search_extension_knowledge(query)` added to the agent's tool set.
-- Validation: retrieval recall test on 10 hand-crafted questions whose answers are known to appear in the PDFs.
-
-**Validation gate:** For the query "Why does row spacing affect yield more in dry years?", the agent cites at least one extension document by name and page.
-
----
-
-## Phase 4 — GUI
+## Phase 3 — GUI
 **Goal:** A chat-style GUI where users type queries and see rendered figures inline.
 
 **Deliverables:**
@@ -73,6 +60,19 @@ Each phase ends with a working, testable deliverable. Phases are sequential; eac
 - Manual test checklist against 5 representative queries covering both plot types and a RAG question.
 
 **Validation gate:** A non-technical user can go from typing a county name to seeing a recommendation plot and reading a plain-language explanation in under 10 seconds, with no error messages.
+
+---
+
+## Phase 4 — RAG Knowledge Base
+**Goal:** Ingest MU Extension PDFs; enable the agent to ground agronomic explanations in retrieved passages.
+
+**Deliverables:**
+- `src/rag/ingest.py` — PDF chunking (recursive character splitter, ~500 tokens, 50-token overlap) and embedding via the Claude Embeddings API or `sentence-transformers`; stores vectors in ChromaDB on disk.
+- `src/rag/retriever.py` — `retrieve(query, k=4) → list[Chunk]` with source citation metadata (document name, page number).
+- Agent integration: retrieved passages injected into the system prompt when the user asks a "why" or "how" question; tool `search_extension_knowledge(query)` added to the agent's tool set.
+- Validation: retrieval recall test on 10 hand-crafted questions whose answers are known to appear in the PDFs.
+
+**Validation gate:** For the query "Why does row spacing affect yield more in dry years?", the agent cites at least one extension document by name and page.
 
 ---
 

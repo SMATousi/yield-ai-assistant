@@ -118,7 +118,7 @@ If the project later needs a more polished UI, the Gradio layer can be replaced 
 
 ---
 
-### API Layer (thin, optional in Phase 4)
+### API Layer (thin, optional in Phase 3)
 
 | Choice | Rationale |
 |---|---|

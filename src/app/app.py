@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
+from pathlib import Path
+
+# When run as `python src/app/app.py` the project root is not on sys.path.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import gradio as gr
 import plotly.graph_objects as go

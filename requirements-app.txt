@@ -1,0 +1,10 @@
+pandas>=2.0
+scipy
+geopy
+plotly>=5.20
+gradio>=4.0
+litellm
+anthropic
+openai
+requests
+numpy

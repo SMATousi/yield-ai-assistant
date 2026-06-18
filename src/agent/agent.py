@@ -88,11 +88,12 @@ def run_agent(
     ctx: ToolContext,
     max_iterations: int = 10,
     model: str = LLM_MODEL,
+    prior_messages: list[dict] | None = None,
 ) -> AgentResponse:
-    messages: list[dict] = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_query},
-    ]
+    messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    if prior_messages:
+        messages.extend(prior_messages)
+    messages.append({"role": "user", "content": user_query})
 
     figure: go.Figure | None = None
     site: str | None = None

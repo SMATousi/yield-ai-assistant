@@ -27,19 +27,19 @@ This is the single pass/fail gate. All checklist items below must be green befor
 
 ### Geocoding
 
-- [ ] `geocode("Columbia, MO")` returns (lat, lon) within 0.5° of (38.9517, -92.3341). *(network test — verified manually)*
-- [ ] `geocode("Kansas City, MO")` returns (lat, lon) within 0.5° of (39.0997, -94.5786). *(network test)*
-- [ ] `geocode("St. Louis, MO")` returns (lat, lon) within 0.5° of (38.6270, -90.1994). *(network test)*
-- [ ] `geocode("Springfield, MO")` returns (lat, lon) within 0.5° of (37.2153, -93.2982). *(network test)*
-- [ ] `geocode("Joplin, MO")` returns (lat, lon) within 0.5° of (37.0842, -94.5133). *(network test)*
+- [x] `geocode("Columbia, MO")` returns (lat, lon) within 0.5° of (38.9517, -92.3341). *(network test — `test_geocode_missouri_cities`)*
+- [x] `geocode("Kansas City, MO")` returns (lat, lon) within 0.5° of (39.0997, -94.5786). *(network test)*
+- [x] `geocode("St. Louis, MO")` returns (lat, lon) within 0.5° of (38.6270, -90.1994). *(network test)*
+- [x] `geocode("Springfield, MO")` returns (lat, lon) within 0.5° of (37.2153, -93.2982). *(network test)*
+- [x] `geocode("Joplin, MO")` returns (lat, lon) within 0.5° of (37.0842, -94.5133). *(network test)*
 - [x] A second call with the same query (after mocking the geocoder) does not make a second network request (cache hit).
 - [x] `geocode` raises `GeocodingError` when both Nominatim and Photon return `None`.
 
 ### Integration
 
 - [x] `resolve_location("Columbia, MO", grid)` returns a site string (end-to-end, confirmed by smoke test).
-- [ ] `resolve_location("Audrain County, MO", grid)` returns a site string without error. *(network test)*
-- [ ] `resolve_location("65201", grid)` (Columbia ZIP) returns a site string without error. *(network test)*
+- [x] `resolve_location("Audrain County, MO", grid)` returns a site string without error. *(network test — `test_resolve_location_network`)*
+- [x] `resolve_location("65201", grid)` (Columbia ZIP) returns a site string without error. *(network test)*
 - [x] `resolve_location("completely invalid xyz 99999", grid)` raises `GeocodingError`.
 
 ### Code Quality

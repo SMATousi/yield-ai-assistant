@@ -123,3 +123,21 @@ def test_geocode_missouri_cities(city, expected_lat, expected_lon):
     lat, lon = geocode(city)
     assert abs(lat - expected_lat) <= 0.5, f"{city}: lat {lat} too far from {expected_lat}"
     assert abs(lon - expected_lon) <= 0.5, f"{city}: lon {lon} too far from {expected_lon}"
+
+
+@pytest.mark.network
+@pytest.mark.parametrize("query", [
+    "Audrain County, MO",
+    "65201",
+])
+def test_resolve_location_network(query):
+    import time
+    geocoder_module._cache.clear()
+    grid = _make_grid(SITES)
+    time.sleep(1)  # respect Nominatim 1 req/s rate limit
+    site = resolve_location(query, grid)
+    assert "_" in site
+    parts = site.split("_", 1)
+    assert len(parts) == 2
+    float(parts[0])  # lat parseable
+    float(parts[1])  # lon parseable

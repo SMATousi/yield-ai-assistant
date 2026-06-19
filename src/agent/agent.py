@@ -237,6 +237,9 @@ def run_agent(
                 "Please rephrase your query or verify the location is in Missouri."
             )
 
+        # Always append the final assistant turn so raw_messages is complete.
+        messages.append({"role": "assistant", "content": text})
+
         yield AgentEvent(
             "result",
             response=AgentResponse(

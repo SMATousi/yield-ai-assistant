@@ -22,7 +22,7 @@ rad.json
 #Test results file
 TestResults.xml
 
-data/
+/data/
 
 # Python
 __pycache__/

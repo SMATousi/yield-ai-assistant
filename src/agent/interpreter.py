@@ -71,4 +71,8 @@ def interpret(
         model=model,
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.choices[0].message.content
+    msg = response.choices[0].message
+    content = (msg.content or "").strip()
+    if not content:
+        content = (getattr(msg, "reasoning_content", None) or "").strip()
+    return content

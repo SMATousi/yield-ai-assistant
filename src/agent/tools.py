@@ -51,7 +51,8 @@ TOOLS: list[dict] = [
                         "type": "string",
                         "description": (
                             "Any location string: county name (e.g. 'Audrain County, MO'), "
-                            "city (e.g. 'Columbia, MO'), ZIP code (e.g. '65201'), or street address."
+                            "city (e.g. 'Columbia, MO'), ZIP code (e.g. '65201'), "
+                            "street address, or decimal coordinates (e.g. '38.5, -92.3')."
                         ),
                     }
                 },
@@ -152,6 +153,21 @@ def _site_coords(site: str) -> tuple[float, float]:
     return float(lat_str), float(lon_str)
 
 
+def _validate_site_key(site: str) -> str | None:
+    """Return an error message string if the site key format is invalid, else None."""
+    try:
+        lat_str, lon_str = site.split("_", 1)
+        float(lat_str)
+        float(lon_str)
+        return None
+    except (ValueError, AttributeError):
+        return (
+            f"Invalid site key {site!r}. Site keys must be 'lat_lon' format "
+            f"(e.g. '38.95_-92.33'). Call lookup_nearest_site with a Missouri "
+            f"location name to get the correct key."
+        )
+
+
 def _lookup_nearest_site(location: str, ctx: ToolContext) -> ToolResult:
     try:
         lat, lon = _geocoder.geocode(location)
@@ -180,9 +196,16 @@ def _generate_recommendation_plot(
     ctx: ToolContext = None,  # type: ignore[assignment]
 ) -> ToolResult:
     try:
+        if site is not None:
+            err = _validate_site_key(site)
+            if err:
+                return ToolResult(content=json.dumps({"error": err}))
         if site is None:
             if not location:
-                return ToolResult(content="Error: either 'site' or 'location' is required.")
+                return ToolResult(content=json.dumps({
+                    "error": "either 'site' or 'location' is required.",
+                    "hint": "Pass the 'site' key returned by lookup_nearest_site.",
+                }))
             lat, lon = _geocoder.geocode(location)
             site = ctx.grid.nearest_site(lat, lon)
         fig = plot_recommendation(
@@ -216,9 +239,16 @@ def _generate_doy_response_plot(
     ctx: ToolContext = None,  # type: ignore[assignment]
 ) -> ToolResult:
     try:
+        if site is not None:
+            err = _validate_site_key(site)
+            if err:
+                return ToolResult(content=json.dumps({"error": err}))
         if site is None:
             if not location:
-                return ToolResult(content="Error: either 'site' or 'location' is required.")
+                return ToolResult(content=json.dumps({
+                    "error": "either 'site' or 'location' is required.",
+                    "hint": "Pass the 'site' key returned by lookup_nearest_site.",
+                }))
             lat, lon = _geocoder.geocode(location)
             site = ctx.grid.nearest_site(lat, lon)
         fig = plot_doy_response(ctx.dataset.df, site)
@@ -253,4 +283,8 @@ def execute_tool(name: str, arguments: dict, ctx: ToolContext) -> ToolResult:
         raise AgentError(f"Unknown tool: {name!r}")
     valid = set(inspect.signature(fn).parameters) - {"ctx"}
     filtered = {k: v for k, v in arguments.items() if k in valid}
+    # Some models echo the parameter schema object as the argument value instead of
+    # supplying an actual string. Discard any value that looks like a schema property
+    # (a dict with a "type" key) so the tool receives only real values.
+    filtered = {k: v for k, v in filtered.items() if not (isinstance(v, dict) and "type" in v)}
     return fn(**filtered, ctx=ctx)

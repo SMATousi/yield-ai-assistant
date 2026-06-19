@@ -15,7 +15,7 @@ from config import AGGREGATE_CSV, LLM_MODEL
 from src.data.loader import load_dataset
 from src.data.grid import build_grid
 from src.agent.tools import ToolContext
-from src.agent.agent import run_agent, AgentError
+from src.agent.agent import run_agent, AgentError, AgentEvent
 from src.app.state import (
     KNOWN_CLOUD_MODELS,
     SessionState,
@@ -109,9 +109,10 @@ def _handle_query(
     default_date: str,
     default_moisture: str,
     top_n: int,
-) -> tuple:
+):
     if not query.strip():
-        return state, state.chat_history, None, gr.update(), "Site: —", ""
+        yield state, state.chat_history, None, gr.update(), "Site: —", "", ""
+        return
 
     # Inject API key into environment before the LLM call
     if (api_key or "").strip():
@@ -126,50 +127,60 @@ def _handle_query(
     # Build prior context: everything except the system message from previous turns
     prior = [m for m in state.messages if m.get("role") != "system"]
 
-    try:
-        response = run_agent(
-            augmented,
-            _ctx,
-            model=model_str,
-            prior_messages=prior if prior else None,
-        )
-    except (AgentError, Exception) as exc:
-        error_text = f"Error: {exc}"
-        state.chat_history.append({"role": "user", "content": query})
-        state.chat_history.append({"role": "assistant", "content": error_text})
-        return (
-            state,
-            state.chat_history,
-            None,
-            gr.update(visible=False),
-            f"Site: {state.last_site or '—'}  |  Model: {model_str}",
-            "",
-        )
-
     state.chat_history.append({"role": "user", "content": query})
-    state.chat_history.append({"role": "assistant", "content": response.text})
-    state.messages = [
-        m for m in response.raw_messages if m.get("role") != "system"
-    ]
-    if response.site:
-        state.last_site = response.site
-
-    html_path = None
-    download_update = gr.update(visible=False)
-    if response.figure is not None:
-        html_path = _save_figure_html(response.figure)
-        download_update = gr.update(visible=True, value=html_path)
-
+    state.chat_history.append({"role": "assistant", "content": "⏳ Working…"})
     status = f"Site: {state.last_site or '—'}  |  Model: {model_str}"
 
-    return (
-        state,
-        state.chat_history,
-        response.figure,
-        download_update,
-        status,
-        "",
-    )
+    log_lines: list[str] = []
+
+    for event in run_agent(augmented, _ctx, model=model_str, prior_messages=prior or None):
+        if event.type == "log":
+            log_lines.append(event.text)
+            yield (
+                state,
+                state.chat_history,
+                None,
+                gr.update(visible=False),
+                status,
+                "",
+                "\n".join(log_lines),
+            )
+
+        elif event.type == "result":
+            response = event.response
+            state.chat_history[-1] = {"role": "assistant", "content": response.text}
+            state.messages = [m for m in response.raw_messages if m.get("role") != "system"]
+            if response.site:
+                state.last_site = response.site
+
+            download_update = gr.update(visible=False)
+            if response.figure is not None:
+                html_path = _save_figure_html(response.figure)
+                download_update = gr.update(visible=True, value=html_path)
+
+            status = f"Site: {state.last_site or '—'}  |  Model: {model_str}"
+            yield (
+                state,
+                state.chat_history,
+                response.figure,
+                download_update,
+                status,
+                "",
+                "\n".join(log_lines),
+            )
+
+        elif event.type == "error":
+            error_text = f"Error: {event.exc}"
+            state.chat_history[-1] = {"role": "assistant", "content": error_text}
+            yield (
+                state,
+                state.chat_history,
+                None,
+                gr.update(visible=False),
+                f"Site: {state.last_site or '—'}  |  Model: {model_str}",
+                "",
+                "\n".join(log_lines),
+            )
 
 
 def _clear_session_handler() -> tuple:
@@ -179,6 +190,7 @@ def _clear_session_handler() -> tuple:
         None,
         gr.update(visible=False),
         "Site: —",
+        "",
         "",
     )
 
@@ -280,6 +292,16 @@ def build_app() -> gr.Blocks:
 
                 status_md = gr.Markdown("Site: —")
 
+                with gr.Accordion("Agent log", open=True):
+                    log_box = gr.Textbox(
+                        show_label=False,
+                        interactive=False,
+                        lines=8,
+                        max_lines=20,
+                        placeholder="Agent activity will appear here while the model is working.",
+                        elem_id="agent-log",
+                    )
+
                 clear_btn = gr.Button("Clear", size="sm")
 
         # ── Event wiring ──────────────────────────────────────────────────────
@@ -289,7 +311,7 @@ def build_app() -> gr.Blocks:
             provider_radio, ollama_dd, cloud_dd, custom_model_box, api_key_box,
             default_date_dd, default_moisture_dd, top_n_slider,
         ]
-        _query_outputs = [state, chatbot, figure_display, download_btn, status_md, query_box]
+        _query_outputs = [state, chatbot, figure_display, download_btn, status_md, query_box, log_box]
 
         send_btn.click(fn=_handle_query, inputs=_query_inputs, outputs=_query_outputs)
         query_box.submit(fn=_handle_query, inputs=_query_inputs, outputs=_query_outputs)
@@ -305,7 +327,7 @@ def build_app() -> gr.Blocks:
         clear_btn.click(
             fn=_clear_session_handler,
             inputs=[],
-            outputs=[state, chatbot, figure_display, download_btn, status_md, query_box],
+            outputs=[state, chatbot, figure_display, download_btn, status_md, query_box, log_box],
         )
 
     return demo

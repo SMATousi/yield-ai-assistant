@@ -133,6 +133,29 @@ def _handle_query(
 
     log_lines: list[str] = []
 
+    def _format_messages(messages: list[dict]) -> str:
+        parts = ["=" * 60, "FULL MESSAGE HISTORY", "=" * 60]
+        for i, m in enumerate(messages):
+            role = m.get("role", "?").upper()
+            parts.append(f"\n[{i}] {role}")
+            if role == "ASSISTANT":
+                content = m.get("content") or ""
+                if content:
+                    parts.append(f"  content: {content}")
+                for tc in m.get("tool_calls") or []:
+                    fn = tc.get("function", {})
+                    parts.append(f"  tool_call: {fn.get('name')}({fn.get('arguments', '')})")
+            elif role == "TOOL":
+                parts.append(f"  name: {m.get('name')}")
+                parts.append(f"  content: {m.get('content', '')}")
+            else:
+                content = m.get("content", "")
+                if isinstance(content, list):
+                    content = " ".join(c.get("text", "") for c in content if isinstance(c, dict))
+                parts.append(f"  {content}")
+        parts.append("\n" + "=" * 60)
+        return "\n".join(parts)
+
     for event in run_agent(augmented, _ctx, model=model_str, prior_messages=prior or None):
         if event.type == "log":
             log_lines.append(event.text)
@@ -159,6 +182,7 @@ def _handle_query(
                 download_update = gr.update(visible=True, value=html_path)
 
             status = f"Site: {state.last_site or '—'}  |  Model: {model_str}"
+            full_log = "\n".join(log_lines) + "\n\n" + _format_messages(response.raw_messages)
             yield (
                 state,
                 state.chat_history,
@@ -166,7 +190,7 @@ def _handle_query(
                 download_update,
                 status,
                 "",
-                "\n".join(log_lines),
+                full_log,
             )
 
         elif event.type == "error":
@@ -296,9 +320,9 @@ def build_app() -> gr.Blocks:
                     log_box = gr.Textbox(
                         show_label=False,
                         interactive=False,
-                        lines=8,
-                        max_lines=20,
-                        placeholder="Agent activity will appear here while the model is working.",
+                        lines=20,
+                        max_lines=80,
+                        placeholder="Agent activity and full message history will appear here for debugging.",
                         elem_id="agent-log",
                     )
 

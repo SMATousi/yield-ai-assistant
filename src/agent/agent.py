@@ -42,9 +42,11 @@ Then pass that exact site key to the plot tool. Never call a plot tool without e
 (from a prior lookup) or 'location'.
 - Never fabricate plot data or treatment rankings — all numbers must come from a tool result.
 - Do not repeat a tool call with the same arguments in the same turn.
-- If the user asks to see a planting-date response curve, call `generate_doy_response_plot`.
-- If the user asks for a recommendation (best treatment, top management, what to plant), \
-call `generate_recommendation_plot`.
+- For any recommendation query (best treatment, top management, what to plant, how to manage), \
+call BOTH `generate_recommendation_plot` AND `generate_doy_response_plot` for the same site. \
+Call them in the same turn; order does not matter.
+- If the user asks only to see a planting-date response curve (no recommendation needed), \
+call only `generate_doy_response_plot`.
 
 ## Moisture scenario mapping
 When the user describes weather or seasonal conditions, map to the `moisture_scenario` \

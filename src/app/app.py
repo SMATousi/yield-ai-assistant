@@ -383,8 +383,12 @@ def build_app() -> gr.Blocks:
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=7860)
+    args = parser.parse_args()
     build_app().launch(
         server_name="0.0.0.0",
-        server_port=7860,
+        server_port=args.port,
         theme=gr.themes.Soft(),
     )

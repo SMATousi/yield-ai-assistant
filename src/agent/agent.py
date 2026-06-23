@@ -130,6 +130,7 @@ def run_agent(
     moisture_group: str | None = None
     msg = None
     _consecutive_failures = 0
+    _called_tools: set[tuple[str, str]] = set()
 
     try:
         for i in range(max_iterations):
@@ -142,6 +143,8 @@ def run_agent(
                 break
 
             messages.append(_make_assistant_dict(msg))
+
+            _had_new_tool_call = False
 
             for tc in msg.tool_calls:
                 if tc.function.name not in _KNOWN_TOOL_NAMES:
@@ -163,6 +166,19 @@ def run_agent(
                     yield AgentEvent("log", text=f"[✗] Bad JSON args for {tc.function.name}")
                     _consecutive_failures += 1
                     continue
+
+                call_key = (tc.function.name, tc.function.arguments)
+                if call_key in _called_tools:
+                    messages.append(_tool_error_message(
+                        tc.id,
+                        f"Tool {tc.function.name!r} was already called with these arguments. "
+                        "You have all the data you need. Stop calling tools and write your "
+                        "final agronomic response now.",
+                    ))
+                    yield AgentEvent("log", text=f"[✗] Duplicate blocked: {tc.function.name}")
+                    continue
+                _called_tools.add(call_key)
+                _had_new_tool_call = True
 
                 args_preview = tc.function.arguments[:300]
                 yield AgentEvent("log", text=f"[⚙] {tc.function.name}({args_preview})")
@@ -197,6 +213,12 @@ def run_agent(
                     "name": tc.function.name,
                     "content": result.content,
                 })
+
+            # All calls this turn were duplicates — the model is stuck; break and
+            # use whatever data was collected to generate the final response.
+            if not _had_new_tool_call:
+                yield AgentEvent("log", text="[✓] All tool calls were duplicates — proceeding to response.")
+                break
 
             if _consecutive_failures >= 4:
                 raise AgentError(

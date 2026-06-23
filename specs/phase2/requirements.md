@@ -39,7 +39,7 @@ Define the three tools the LLM can call, their Python executor functions, and th
 - Raised when the agent cannot continue: max iterations exceeded, or the model repeatedly returns malformed tool calls.
 
 **FR-2b: `AgentResponse` dataclass**
-- Fields: `text: str`, `figure: go.Figure | None`, `site: str | None` (last resolved site, for use by the GUI), `raw_messages: list[dict]` (full message history for debugging).
+- Fields: `text: str`, `figures: dict[str, go.Figure]` (all figures generated in the turn, keyed by tool name e.g. `"generate_doy_response_plot"`, `"generate_recommendation_plot"`; empty dict when no plot was produced), `site: str | None` (last resolved site, for use by the GUI), `raw_messages: list[dict]` (full message history for debugging).
 
 **FR-2c: `SYSTEM_PROMPT` constant**
 - A module-level string defined in `agent.py`.
@@ -53,11 +53,11 @@ Define the three tools the LLM can call, their Python executor functions, and th
 - Builds an initial `messages` list with the system prompt and the user query.
 - Calls `litellm.completion(model=model, messages=messages, tools=TOOLS)` in a loop.
 - On each iteration:
-  - If the response contains `tool_calls`, execute each tool call via `execute_tool`, append the assistant message and the tool result message(s) to `messages`, capture any non-`None` `figure` from `ToolResult`, capture `site` from tool result `content` if present.
+  - If the response contains `tool_calls`, execute each tool call via `execute_tool`, append the assistant message and the tool result message(s) to `messages`, accumulate any non-`None` `figure` from `ToolResult` into the `figures` dict keyed by tool name, capture `site` from tool result `content` if present.
   - If the response has no `tool_calls`, break the loop. The response text becomes the base for the final answer.
 - After the loop, if a figure was generated and `interpret` is available, call `interpret(ctx.dataset.df, site, plt_dtDoy, moisture_group, model)` from `interpreter.py` and append the interpretation to the response text.
 - If `max_iterations` is reached without a `tool_calls`-free response, raise `AgentError("max_iterations exceeded")`.
-- Return `AgentResponse(text=..., figure=..., site=..., raw_messages=messages)`.
+- Return `AgentResponse(text=..., figures=..., site=..., raw_messages=messages)`.
 
 **FR-2e: Tool call output validation**
 - Before calling `execute_tool`, validate that `tool_call.function.name` is in the known tool names list. If not, append an error tool result message and continue (do not raise — give the model a chance to recover).
@@ -132,7 +132,7 @@ class AgentError(Exception): ...
 @dataclasses.dataclass
 class AgentResponse:
     text: str
-    figure: go.Figure | None
+    figures: dict[str, go.Figure]  # keyed by tool name; empty dict if no plot produced
     site: str | None
     raw_messages: list[dict]
 

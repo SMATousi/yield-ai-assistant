@@ -72,11 +72,13 @@ def _augment_query(
     return query
 
 
-def _save_figure_html(figure: go.Figure) -> str:
+def _figure_download_update(figure: go.Figure | None) -> gr.update:
+    if figure is None:
+        return gr.update(visible=False)
     with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as f:
         path = f.name
     figure.write_html(path)
-    return path
+    return gr.update(visible=True, value=path)
 
 
 # ── Gradio event handlers ─────────────────────────────────────────────────────
@@ -111,7 +113,7 @@ def _handle_query(
     top_n: int,
 ):
     if not query.strip():
-        yield state, state.chat_history, None, gr.update(), "Site: —", "", ""
+        yield state, state.chat_history, None, None, gr.update(), gr.update(), "Site: —", "", ""
         return
 
     # Inject API key into environment before the LLM call
@@ -163,6 +165,8 @@ def _handle_query(
                 state,
                 state.chat_history,
                 None,
+                None,
+                gr.update(visible=False),
                 gr.update(visible=False),
                 status,
                 "",
@@ -176,18 +180,18 @@ def _handle_query(
             if response.site:
                 state.last_site = response.site
 
-            download_update = gr.update(visible=False)
-            if response.figure is not None:
-                html_path = _save_figure_html(response.figure)
-                download_update = gr.update(visible=True, value=html_path)
+            doy_fig = response.figures.get("generate_doy_response_plot")
+            rec_fig = response.figures.get("generate_recommendation_plot")
 
             status = f"Site: {state.last_site or '—'}  |  Model: {model_str}"
             full_log = "\n".join(log_lines) + "\n\n" + _format_messages(response.raw_messages)
             yield (
                 state,
                 state.chat_history,
-                response.figure,
-                download_update,
+                doy_fig,
+                rec_fig,
+                _figure_download_update(doy_fig),
+                _figure_download_update(rec_fig),
                 status,
                 "",
                 full_log,
@@ -200,6 +204,8 @@ def _handle_query(
                 state,
                 state.chat_history,
                 None,
+                None,
+                gr.update(visible=False),
                 gr.update(visible=False),
                 f"Site: {state.last_site or '—'}  |  Model: {model_str}",
                 "",
@@ -212,6 +218,8 @@ def _clear_session_handler() -> tuple:
         make_session_state(),
         [],
         None,
+        None,
+        gr.update(visible=False),
         gr.update(visible=False),
         "Site: —",
         "",
@@ -307,12 +315,19 @@ def build_app() -> gr.Blocks:
                     )
                     send_btn = gr.Button("Send", variant="primary", scale=1)
 
-                figure_display = gr.Plot(label="Figure")
-
-                download_btn = gr.DownloadButton(
-                    label="Download figure (HTML)",
-                    visible=False,
-                )
+                with gr.Tabs():
+                    with gr.Tab("Planting Date Response"):
+                        doy_plot = gr.Plot(show_label=False)
+                        doy_download_btn = gr.DownloadButton(
+                            label="Download (HTML)",
+                            visible=False,
+                        )
+                    with gr.Tab("Recommendation"):
+                        rec_plot = gr.Plot(show_label=False)
+                        rec_download_btn = gr.DownloadButton(
+                            label="Download (HTML)",
+                            visible=False,
+                        )
 
                 status_md = gr.Markdown("Site: —")
 
@@ -335,7 +350,12 @@ def build_app() -> gr.Blocks:
             provider_radio, ollama_dd, cloud_dd, custom_model_box, api_key_box,
             default_date_dd, default_moisture_dd, top_n_slider,
         ]
-        _query_outputs = [state, chatbot, figure_display, download_btn, status_md, query_box, log_box]
+        _query_outputs = [
+            state, chatbot,
+            doy_plot, rec_plot,
+            doy_download_btn, rec_download_btn,
+            status_md, query_box, log_box,
+        ]
 
         send_btn.click(fn=_handle_query, inputs=_query_inputs, outputs=_query_outputs)
         query_box.submit(fn=_handle_query, inputs=_query_inputs, outputs=_query_outputs)
@@ -351,7 +371,12 @@ def build_app() -> gr.Blocks:
         clear_btn.click(
             fn=_clear_session_handler,
             inputs=[],
-            outputs=[state, chatbot, figure_display, download_btn, status_md, query_box, log_box],
+            outputs=[
+                state, chatbot,
+                doy_plot, rec_plot,
+                doy_download_btn, rec_download_btn,
+                status_md, query_box, log_box,
+            ],
         )
 
     return demo

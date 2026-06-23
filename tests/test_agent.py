@@ -184,9 +184,9 @@ def test_execute_tool_geocoding_error_returns_content(tool_ctx, monkeypatch):
 # ── agent.py — structure (no LLM call) ────────────────────────────────────────
 
 def test_agent_response_fields():
-    r = AgentResponse(text="hello", figure=None, site=None, raw_messages=[])
+    r = AgentResponse(text="hello", figures={}, site=None, raw_messages=[])
     assert r.text == "hello"
-    assert r.figure is None
+    assert r.figures == {}
     assert r.site is None
     assert r.raw_messages == []
 

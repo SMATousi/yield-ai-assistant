@@ -74,8 +74,12 @@ The left column of the `gr.Blocks` layout is a collapsible settings panel. It co
 
 ### FR-4: Figure Display and Download (`src/app/app.py`)
 
-- `gr.Plot(label="Figure", visible=True)` renders the Plotly figure returned by the agent. Updated after each successful query that returns a figure. Not cleared between queries — keeps showing the last figure until a new one arrives.
-- `gr.DownloadButton(label="Download figure (HTML)", visible=False)` — becomes visible and its `value` is set to the temp HTML file path when a figure is available. Hidden again after "Clear".
+- A `gr.Tabs` component with two tabs: **"Planting Date Response"** and **"Recommendation"**.
+- Each tab contains a `gr.Plot` (show_label=False) and a `gr.DownloadButton(label="Download (HTML)", visible=False)`.
+- The "Planting Date Response" tab renders the figure from `generate_doy_response_plot` (keyed as `"generate_doy_response_plot"` in `AgentResponse.figures`).
+- The "Recommendation" tab renders the figure from `generate_recommendation_plot` (keyed as `"generate_recommendation_plot"`).
+- Each plot is updated independently after each query. Tabs without a new figure in a given turn pass `None`, leaving the last plot in place.
+- Each download button becomes visible (with the temp HTML path as its value) when its figure is available, and is hidden again after "Clear". The `_figure_download_update(figure)` helper handles both cases: returns `gr.update(visible=True, value=path)` when a figure is provided, `gr.update(visible=False)` otherwise.
 
 ---
 

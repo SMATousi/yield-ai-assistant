@@ -17,7 +17,7 @@ __all__ = ["AgentError", "AgentEvent", "AgentResponse", "SYSTEM_PROMPT", "run_ag
 @dataclasses.dataclass
 class AgentResponse:
     text: str
-    figure: go.Figure | None
+    figures: dict[str, go.Figure]   # keyed by tool name
     site: str | None
     raw_messages: list[dict]
 
@@ -122,7 +122,7 @@ def run_agent(
         messages.extend(prior_messages)
     messages.append({"role": "user", "content": user_query})
 
-    figure: go.Figure | None = None
+    figures: dict[str, go.Figure] = {}
     site: str | None = None
     plt_dtDoy: str | None = None
     moisture_group: str | None = None
@@ -178,7 +178,7 @@ def run_agent(
                     _consecutive_failures = 0
 
                 if result.figure is not None:
-                    figure = result.figure
+                    figures[tc.function.name] = result.figure
 
                 parsed = _try_parse_json(result.content)
                 if parsed:
@@ -219,7 +219,7 @@ def run_agent(
             base_text = ""
 
         interpretation = ""
-        if figure is not None and site and plt_dtDoy and moisture_group:
+        if figures and site and plt_dtDoy and moisture_group:
             yield AgentEvent("log", text="[→] Generating interpretation…")
             try:
                 interpretation = interpret(ctx.dataset.df, site, plt_dtDoy, moisture_group, model=model)
@@ -244,7 +244,7 @@ def run_agent(
             "result",
             response=AgentResponse(
                 text=text,
-                figure=figure,
+                figures=figures,
                 site=site,
                 raw_messages=messages,
             ),

@@ -10,25 +10,25 @@
 
 ### Validation mode — offline unit tests
 
-- [ ] `from src.app.validation import ValidationWriter, make_validation_writer` imports without error and without side effects.
-- [ ] `make_validation_writer(validate=False)` returns `None`.
-- [ ] `make_validation_writer(validate=True, root=<tmpdir>)` returns a `ValidationWriter` and creates the session directory.
-- [ ] After `writer.write_turn(turn=1, ...)`:
+- [x] `from src.app.validation import ValidationWriter, make_validation_writer` imports without error and without side effects.
+- [x] `make_validation_writer(validate=False)` returns `None`.
+- [x] `make_validation_writer(validate=True, root=<tmpdir>)` returns a `ValidationWriter` and creates the session directory.
+- [x] After `writer.write_turn(turn=1, ...)`:
   - `<session_dir>/001/query.txt` exists and contains the raw query string.
   - `<session_dir>/001/response.txt` exists and contains the response text.
   - `<session_dir>/001/conversation.json` is valid JSON and contains the `raw_messages` list.
   - `<session_dir>/001/recommendation.html` exists when `figures` dict contains `"generate_recommendation_plot"`.
   - `<session_dir>/001/doy_response.html` exists when `figures` dict contains `"generate_doy_response_plot"`.
-  - `<session_dir>/index.html` exists and contains the query text from turn 1.
-- [ ] `write_turn` with a non-serialisable value in `raw_messages` does not raise (the `default=str` fallback handles it).
-- [ ] A second `write_turn(turn=2, ...)` appends a second row to `index.html` without losing turn 1's row.
+  - `<session_dir>/index.html` exists and contains the query text and response text from turn 1.
+- [x] `write_turn` with a non-serialisable value in `raw_messages` does not raise (the `default=str` fallback handles it).
+- [x] A second `write_turn(turn=2, ...)` appends a second row to `index.html` without losing turn 1's row.
 
 ### Validation mode — app integration
 
-- [ ] `python src/app/app.py --validate` starts the app and prints a path under `./validation_runs/` to the sidebar.
-- [ ] After submitting a query with `--validate` active, the session directory contains `001/query.txt` with the user's raw query (not the augmented version).
-- [ ] `_handle_query` does not propagate `ValidationWriter` exceptions to the Gradio UI — a monkeypatched `write_turn` that raises still results in a normal chatbot response.
-- [ ] `python src/app/app.py` (without `--validate`) runs normally; no `validation_runs/` directory is created.
+- [x] `python src/app/app.py --validate` starts the app and prints the session path to stdout; path also appears in the sidebar "Saving to" field.
+- [x] After submitting a query with `--validate` active, the session directory contains `001/query.txt` with the user's raw query (not the augmented version).
+- [x] `_handle_query` does not propagate `ValidationWriter` exceptions to the Gradio UI — a monkeypatched `write_turn` that raises still results in a normal chatbot response.
+- [x] `python src/app/app.py` (without `--validate`) runs normally; no `validation_runs/` directory is created.
 
 ### Spend tracking — offline unit tests
 
@@ -62,10 +62,11 @@
 
 ### index.html review workflow
 
-- [ ] Opening `<session_dir>/index.html` in a browser (via `file://`) shows a table with one row per completed turn.
-- [ ] Each row's figure links open the corresponding `doy_response.html` or `recommendation.html` in a new tab.
-- [ ] Figure link cells are visually distinct (greyed out or dashed) for turns where the figure was not generated.
-- [ ] The index renders correctly with no internet connection (no CDN dependencies).
+- [x] Opening `<session_dir>/index.html` in a browser (via `file://`) shows a table with one row per completed turn.
+- [x] Each row includes: turn number, timestamp, query, **full agent response text** (rendered with `white-space: pre-wrap`), site, model, DOY plot link, recommendation link.
+- [x] Each row's figure links open the corresponding `doy_response.html` or `recommendation.html` in a new tab.
+- [x] Figure link cells show a greyed-out `—` (`.missing` CSS class) for turns where the figure was not generated.
+- [x] The index renders correctly with no internet connection (no CDN dependencies).
 
 ---
 

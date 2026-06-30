@@ -34,6 +34,12 @@ This is the single pass/fail gate. All checklist items below must be green befor
 - [x] `_ds.sites` is a non-empty list of site strings.
 - [x] `_ctx` is a `ToolContext` with `.dataset is _ds`.
 
+### app.py — logos (FR-9)
+
+- [x] The header row contains two `gr.Image` components pointing to `logos/MSMC_CheckLogo_052421.jpg` and `logos/LOGO OFICIAL SFS BLACK AND WHITE_walpapper by AnaGeller.png`.
+- [x] Both images are `interactive=False` and `height=80`.
+- [x] `build_app()` raises no error when the logo files are present at the expected paths.
+
 ### app.py — sidebar controls
 
 - [x] The layout contains a `gr.Radio` with choices `["Ollama (local)", "Claude API", "OpenAI", "Custom"]`.

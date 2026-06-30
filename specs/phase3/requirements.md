@@ -135,14 +135,24 @@ The left column of the `gr.Blocks` layout is a collapsible settings panel. It co
 
 ---
 
+### FR-9: Partner Logos
+
+Two partner logos are displayed in a header row at the top of the `gr.Blocks` layout, flanking the title.
+
+- Left: `logos/MSMC_CheckLogo_052421.jpg` — rendered via `gr.Image`, `height=80`, `interactive=False`, `container=False`.
+- Right: `logos/LOGO OFICIAL SFS BLACK AND WHITE_walpapper by AnaGeller.png` — same settings.
+- The header row uses `gr.Row(equal_height=True)` with `scale=1` columns for each logo and `scale=4` for the title column.
+- Logo paths are resolved relative to the project root at module load time.
+
 ---
 
-### FR-9: Validation Mode UI Controls (reserved for Phase 5)
+### FR-10: Validation Mode UI Controls (implemented in Phase 5)
 
 The settings sidebar reserves space for the validation mode indicator introduced in Phase 5. No logic is implemented in Phase 3; the controls are wired in Phase 5.
 
-- A `gr.Textbox` (read-only, `interactive=False`) labelled `"Saving to"` will be shown at the top of the sidebar when the app is launched with `--validate`. It displays the absolute path of the active `ValidationWriter` session directory.
-- This control is hidden by default and shown only when `--validate` is active; its presence here is noted so Phase 3 layout code does not need to be reorganised in Phase 5.
+- A `gr.Markdown` banner is rendered at the top of the layout (below the logo header, above the main `gr.Row`) when `--validate` is active: `"> **Validation mode** — all queries and figures are being saved to \`<session_dir>\`"`.
+- A `gr.Textbox` (read-only, `interactive=False`) labelled `"Saving to"` is shown at the top of the settings sidebar when `--validate` is active. It displays the absolute path of the `ValidationWriter` session directory.
+- Both controls are conditionally included in the layout at `build_app()` time based on the module-level `_writer` variable; no dynamic show/hide logic is needed.
 
 ---
 

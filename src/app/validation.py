@@ -67,6 +67,7 @@ class ValidationWriter:
             "turn": turn,
             "ts": datetime.now().isoformat(timespec="seconds"),
             "query": query,
+            "response": response_text,
             "site": site or "—",
             "model": model,
             "figures": written_figures,
@@ -92,6 +93,7 @@ class ValidationWriter:
                 f"<td>{n}</td>"
                 f"<td>{t['ts']}</td>"
                 f"<td>{_esc(t['query'])}</td>"
+                f"<td class='response'>{_esc(t['response'])}</td>"
                 f"<td>{t['site']}</td>"
                 f"<td>{t['model']}</td>"
                 f"<td>{doy_link}</td>"
@@ -119,7 +121,8 @@ class ValidationWriter:
   table {{ border-collapse: collapse; width: 100%; margin-bottom: 2em; }}
   th, td {{ border: 1px solid #ccc; padding: 6px 10px; text-align: left; vertical-align: top; }}
   th {{ background: #f0f0f0; }}
-  td:nth-child(3) {{ max-width: 400px; word-break: break-word; }}
+  td:nth-child(3) {{ max-width: 300px; word-break: break-word; }}
+  td.response {{ max-width: 500px; white-space: pre-wrap; word-break: break-word; font-size: 0.85em; }}
   .missing {{ color: #aaa; }}
   a {{ color: #0066cc; }}
   h2 {{ font-size: 1.1em; margin-top: 2em; }}
@@ -135,7 +138,7 @@ class ValidationWriter:
 <table>
   <thead>
     <tr>
-      <th>#</th><th>Timestamp</th><th>Query</th><th>Site</th><th>Model</th>
+      <th>#</th><th>Timestamp</th><th>Query</th><th>Response</th><th>Site</th><th>Model</th>
       <th>DOY Plot</th><th>Recommendation</th>
     </tr>
   </thead>

@@ -9,9 +9,10 @@
 Validation mode is an opt-in recording mode that captures every query, agent response, and generated figure for offline review by MU Extension agronomists. It is the primary mechanism for expert QA before production deployment.
 
 **FR-1a: Activation**
-- Activated by passing `--validate` on the command line or by setting `YIELD_VALIDATE=1` in the environment.
-- When active, a non-dismissible `gr.Info` banner appears at the top of the Gradio UI reading `"Validation mode — all queries and figures are being saved to <output_dir>"`.
-- The sidebar shows a read-only `gr.Textbox` labelled `"Saving to"` displaying the absolute path of the current output directory.
+- Activated by passing `--validate` on the command line. The flag sets the module-level `_writer: ValidationWriter | None` before `build_app()` is called; `build_app()` reads this variable to decide whether to show the banner and sidebar path field.
+- When active, a persistent `gr.Markdown` blockquote banner is rendered at the top of the layout (below the logo header, above the main `gr.Row`): `"> **Validation mode** — all queries and figures are being saved to \`<session_dir>\`"`.
+- The sidebar shows a read-only `gr.Textbox` labelled `"Saving to"` displaying the absolute path of the current session directory.
+- The session path is also printed to stdout on startup: `[validation] Saving session to: <path>`.
 
 **FR-1b: Output directory**
 - Root: `YIELD_VALIDATE_DIR` env var if set; otherwise `./validation_runs/` relative to the working directory.
@@ -28,10 +29,11 @@ Each turn directory contains:
 
 **FR-1d: Session index**
 At the end of each turn, `<session_dir>/index.html` is regenerated. It is a static HTML file containing:
-- A table with one row per completed turn: turn number, query text, resolved site, model used, timestamp.
-- Each row links to `<NNN>/doy_response.html` and `<NNN>/recommendation.html` where those files exist; cells are greyed out where the figure was not generated.
+- A table with one row per completed turn: turn number, timestamp, query text, **agent response text**, resolved site, model used, DOY plot link, recommendation plot link.
+- The response column uses `white-space: pre-wrap` so paragraph breaks in the agent's answer are preserved inline.
+- Each row links to `<NNN>/doy_response.html` and `<NNN>/recommendation.html` where those files exist; cells show a greyed-out `—` where the figure was not generated.
 - A `<pre>` block at the bottom showing the full `conversation.json` of the most recent turn.
-- No external dependencies (no CDN links) — the HTML must render correctly when opened from the local filesystem.
+- No external dependencies (no CDN links) — the HTML must render correctly when opened from the local filesystem via `file://`.
 
 **FR-1e: Validation writer module**
 - `src/app/validation.py` — pure Python, no Gradio imports, no side effects at import time.

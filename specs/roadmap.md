@@ -77,14 +77,18 @@ Each phase ends with a working, testable deliverable. Phases are sequential; eac
 ---
 
 ## Phase 5 — Hardening & Deployment
-**Goal:** Make the system reliable enough for MU Extension field use.
+**Goal:** Make the system reliable enough for MU Extension field use, with an expert review workflow that lets agronomists audit AI outputs before trusting recommendations in production.
 
 **Deliverables:**
-- Error handling for: unrecognised location, site with no data for requested DOY/moisture, LLM API timeout.
-- Rate limiting and cost guardrails (max tokens per session, daily API spend cap via usage tracking).
-- Logging: structured JSON logs (query, resolved site, plot type, latency, tokens used).
-- Deployment guide: README instructions for local Docker run and for hosting on a single VM (DigitalOcean / AWS Lightsail tier).
+- `src/app/validation.py` — `ValidationWriter` class and `make_validation_writer` factory. Activated by `--validate` CLI flag or `YIELD_VALIDATE=1`. Writes per-turn artifacts (query, response text, full message JSON, HTML figures) under a timestamped session directory, and regenerates a self-contained `index.html` after each turn for offline expert review.
+- `src/app/spend.py` — daily API cost tracking. Reads/writes a JSON file keyed by UTC date; rejects queries when accumulated spend exceeds `YIELD_MAX_DAILY_USD` (default $5).
+- Error handling for: unrecognised location, site with no data for requested DOY/moisture, LLM API timeout (`YIELD_LLM_TIMEOUT`, default 60 s).
+- Rate limiting: per-session token cap via `YIELD_MAX_SESSION_TOKENS` (default 50 000).
+- Operational logging: one JSON line per completed turn to stdout (`ts`, `query`, `site`, `plot_types`, `model`, `latency_s`, `input_tokens`, `output_tokens`).
+- Deployment guide: README instructions for local Docker run and for hosting on a single VM (DigitalOcean / AWS Lightsail tier), including how to mount the validation output directory as a Docker volume.
 - Optional: simple password gate (HTTP Basic Auth via nginx) if hosted externally.
+
+**Validation gate:** An agronomist can run `python src/app/app.py --validate`, submit 5 representative queries, then open `validation_runs/<session>/index.html` in a browser (no server required) and review all queries, responses, and figures without launching the app again.
 
 ---
 

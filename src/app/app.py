@@ -24,6 +24,7 @@ from src.app.state import (
     list_ollama_models,
     make_session_state,
 )
+from src.app.validation import ValidationWriter, make_validation_writer
 
 # ── Startup singletons (fail fast if CSV missing) ─────────────────────────────
 _ds = load_dataset(AGGREGATE_CSV)
@@ -34,6 +35,13 @@ _DATE_CHOICES: list[str] = sorted(
     _ds.df.index.get_level_values("plt_dtDoy").unique(),
     key=doy_sort_key,
 )
+
+_LOGOS_DIR = Path(__file__).resolve().parent.parent.parent / "logos"
+_LOGO_MSMC = str(_LOGOS_DIR / "MSMC_CheckLogo_052421.jpg")
+_LOGO_SFS = str(_LOGOS_DIR / "LOGO OFICIAL SFS BLACK AND WHITE_walpapper by AnaGeller.png")
+
+# Set by __main__ before build_app() is called; None means validation mode off.
+_writer: ValidationWriter | None = None
 
 
 # ── Pure helper functions (testable without Gradio) ───────────────────────────
@@ -183,6 +191,21 @@ def _handle_query(
             doy_fig = response.figures.get("generate_doy_response_plot")
             rec_fig = response.figures.get("generate_recommendation_plot")
 
+            # Write validation artifacts (failures are non-fatal)
+            if _writer is not None:
+                try:
+                    _writer.write_turn(
+                        turn=len(state.chat_history) // 2,
+                        query=query,
+                        response_text=response.text,
+                        raw_messages=response.raw_messages,
+                        site=state.last_site,
+                        model=model_str,
+                        figures=response.figures,
+                    )
+                except Exception as exc:
+                    print(f"[validation] write failed: {exc}", file=sys.stderr)
+
             status = f"Site: {state.last_site or '—'}  |  Model: {model_str}"
             full_log = "\n".join(log_lines) + "\n\n" + _format_messages(response.raw_messages)
             yield (
@@ -233,7 +256,37 @@ def build_app() -> gr.Blocks:
     initial_ollama_models = list_ollama_models()
 
     with gr.Blocks(title="Yield AI Assistant") as demo:
-        gr.Markdown("# Yield AI Assistant\nSoybean management recommendations for Missouri.")
+
+        # ── Header: logos + title ─────────────────────────────────────────────
+        with gr.Row(equal_height=True):
+            with gr.Column(scale=1, min_width=100):
+                gr.Image(
+                    value=_LOGO_MSMC,
+                    show_label=False,
+                    interactive=False,
+                    height=80,
+                    container=False,
+                )
+            with gr.Column(scale=4):
+                gr.Markdown(
+                    "# Yield AI Assistant\n"
+                    "Soybean management recommendations for Missouri."
+                )
+            with gr.Column(scale=1, min_width=100):
+                gr.Image(
+                    value=_LOGO_SFS,
+                    show_label=False,
+                    interactive=False,
+                    height=80,
+                    container=False,
+                )
+
+        # ── Validation mode banner (only shown when --validate is active) ─────
+        if _writer is not None:
+            gr.Markdown(
+                f"> **Validation mode** — all queries and figures are being saved to "
+                f"`{_writer.session_dir}`"
+            )
 
         state = gr.State(value=make_session_state())
 
@@ -241,6 +294,14 @@ def build_app() -> gr.Blocks:
             # ── Settings sidebar ──────────────────────────────────────────────
             with gr.Column(scale=1, min_width=280):
                 gr.Markdown("### Model")
+
+                # Validation save path (visible only in validation mode)
+                if _writer is not None:
+                    gr.Textbox(
+                        value=str(_writer.session_dir),
+                        label="Saving to",
+                        interactive=False,
+                    )
 
                 provider_radio = gr.Radio(
                     choices=["Ollama (local)", "Claude API", "OpenAI", "Custom"],
@@ -386,7 +447,17 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=7860)
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Record all queries, responses, and figures to disk for expert review.",
+    )
     args = parser.parse_args()
+
+    if args.validate:
+        _writer = make_validation_writer(validate=True)
+        print(f"[validation] Saving session to: {_writer.session_dir}")
+
     build_app().launch(
         server_name="0.0.0.0",
         server_port=args.port,

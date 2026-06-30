@@ -135,6 +135,17 @@ The left column of the `gr.Blocks` layout is a collapsible settings panel. It co
 
 ---
 
+---
+
+### FR-9: Validation Mode UI Controls (reserved for Phase 5)
+
+The settings sidebar reserves space for the validation mode indicator introduced in Phase 5. No logic is implemented in Phase 3; the controls are wired in Phase 5.
+
+- A `gr.Textbox` (read-only, `interactive=False`) labelled `"Saving to"` will be shown at the top of the sidebar when the app is launched with `--validate`. It displays the absolute path of the active `ValidationWriter` session directory.
+- This control is hidden by default and shown only when `--validate` is active; its presence here is noted so Phase 3 layout code does not need to be reorganised in Phase 5.
+
+---
+
 ## Non-Functional Requirements
 
 - `src/app/app.py` and `src/app/state.py` must be importable with no side effects. The Gradio app is only built when `build_app()` is called explicitly; no UI is created at import time.
